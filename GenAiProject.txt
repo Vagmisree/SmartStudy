@@ -1,0 +1,228 @@
+import streamlit as st
+import datetime
+import pandas as pd
+import random
+
+# Subject Difficulty Map (adjust based on experience)
+SUBJECT_DIFFICULTY = {
+    "Math": 8,
+    "Science": 7,
+    "History": 5,
+    "English": 6,
+    "Programming": 9,
+    "Art": 4,
+    "Music": 3,
+    "Economics": 7,
+    "Psychology": 6,
+    "Sociology": 5,
+    "Philosophy": 8,
+    "Political Science": 6,
+    "Geography": 5,
+    "Biology": 7,
+    "Chemistry": 8,
+    "Physics": 9,
+    "Statistics": 7,
+    "Literature": 6,
+    "Computer Science": 9,
+    "Environmental Science": 6,
+    "Marketing": 6,
+    "Finance": 8,
+    "Data Science": 8,
+    "Medicine": 9,
+    "Law": 7,
+    "Engineering": 8,
+    "Architecture": 7,
+    "Nursing": 7,
+    "Education": 6
+}
+
+# Predefined Topics and Important Concepts for Subjects (Expand as needed)
+SUBJECT_TOPICS = {
+    "Math": {
+        "Algebra": ["Solving equations", "Inequalities", "Functions", "Graphing", "Polynomials", "Systems of Equations", "Matrices", "Complex Numbers", "Logarithms", "Exponents"],
+        "Calculus": ["Limits", "Derivatives", "Integrals", "Applications of Calculus", "Series", "Differential Equations", "Multivariable Calculus", "Vector Calculus", "Partial Derivatives", "Optimization"],
+        "Geometry": ["Triangles", "Circles", "Solid Geometry", "Coordinate Geometry", "Trigonometry", "Vectors", "Conic Sections", "Euclidean Geometry", "Non-Euclidean Geometry", "Transformations"],
+        "Statistics": ["Probability", "Distributions", "Hypothesis Testing", "Regression", "Sampling", "Confidence Intervals", "ANOVA", "Nonparametric Tests", "Time Series Analysis", "Bayesian Statistics"],
+        "Discrete Math": ["Logic", "Set Theory", "Combinatorics", "Graph Theory", "Algorithms", "Number Theory", "Boolean Algebra", "Proof Techniques", "Recurrence Relations", "Automata Theory"],
+    },
+    "Science": {
+        "Biology": ["Cell Biology", "Genetics", "Evolution", "Ecology", "Anatomy", "Physiology", "Biochemistry", "Microbiology", "Botany", "Zoology", "Immunology", "Neurobiology", "Developmental Biology", "Molecular Biology"],
+        "Chemistry": ["Atomic Structure", "Chemical Reactions", "Acids and Bases", "Organic Chemistry", "Thermodynamics", "Kinetics", "Electrochemistry", "Nuclear Chemistry", "Analytical Chemistry", "Inorganic Chemistry", "Physical Chemistry", "Polymer Chemistry"],
+        "Physics": ["Mechanics", "Electricity and Magnetism", "Thermodynamics", "Optics", "Quantum Mechanics", "Relativity", "Nuclear Physics", "Astrophysics", "Solid State Physics", "Particle Physics", "Cosmology", "Fluid Dynamics"],
+    },
+    "History": {
+        "World History": ["World War 2", "Cold War", "US civil war", "Industrial Revolution", "Globalization", "Ancient Civilizations", "Medieval History", "Renaissance", "Reformation", "Enlightenment", "Imperialism", "French Revolution", "Russian Revolution", "The World Wars", "The League of Nations"],
+        "US History": ["The American Civil War", "The Cold War", "Civil Rights Movement", "Progressive Era", "New Deal", "Revolutionary War", "Civil War", "The Great Depression", "The Vietnam War", "The Roaring Twenties", "The Gilded Age", "The Reagan Era", "The Civil Rights Era"],
+        "Ancient History": ["Ancient Greece", "Ancient Rome", "Ancient Egypt", "Mesopotamia", "Indus Valley Civilization", "Persian Empire", "Ancient China", "Ancient India", "Mesoamerica", "Byzantine Empire", "The Bronze Age", "The Iron Age"],
+        "European History": ["The Renaissance", "The Reformation", "The French Revolution", "World War I", "World War II", "The Enlightenment", "The Byzantine Empire", "The Roman Empire", "The Middle Ages", "The Cold War", "The Crusades", "The Napoleonic Era", "The Victorian Era"],
+    },
+    "English": {
+        "Literature": ["Shakespearean sonnets", "Victorian Novels", "Modern Poetry", "Classic Literature", "Literary Criticism", "American Literature", "World Literature", "Drama", "Poetry", "Fiction", "Non-Fiction", "Literary Theory", "Genre Studies", "Author Studies", "Period Studies"],
+        "Grammar": ["Parts of speech", "Sentence structure", "Punctuation", "Common grammar mistakes", "Syntax", "Sentence Combining", "Style", "Rhetoric", "Usage", "Mechanics"],
+        "Writing": ["Essay structure", "Creative writing techniques", "Argumentative writing", "Research paper writing", "Technical Writing", "Business Writing", "Journalism", "Screenwriting", "Poetry Writing", "Narrative Writing", "Expository Writing", "Persuasive Writing"],
+        "Poetry": ["Forms of poetry", "Poetic devices", "Analysis of poems", "Famous poets", "Poetry Interpretation", "Sonnet Structure", "Free Verse", "Haiku", "Limerick", "Epic", "Ballad", "Ode"],
+    },
+    "Programming": {
+        "Python": ["Data types", "Control flow", "Functions", "Object-oriented programming", "Data Structures", "Algorithms", "Web Frameworks (Django, Flask)", "Data Science Libraries (Pandas, NumPy, Scikit-learn)", "Machine Learning Libraries (TensorFlow, PyTorch)", "GUI Development (Tkinter, PyQt)", "Asynchronous Programming", "Multiprocessing", "Networking", "Database Connectivity"],
+        "Java": ["Classes and objects", "Inheritance", "Polymorphism", "Data structures", "Concurrency", "Design Patterns", "Spring Framework", "Enterprise Java Beans", "Android Development", "JavaFX", "Servlets", "JSP", "Hibernate", "JPA"],
+        "Web Development": ["HTML, CSS, JavaScript", "Front-end frameworks", "Back-end development", "Databases", "Responsive Design", "Version Control (Git)", "API Design", "Web Security", "Testing", "Web Servers", "Load Balancing", "Caching"],
+        "Data Science": ["Data analysis", "Machine learning algorithms", "Data visualization", "Statistical modeling", "Data Mining", "Deep Learning", "Big Data Technologies (Spark, Hadoop)", "Cloud Computing (AWS, Azure, GCP)", "Natural Language Processing", "Computer Vision", "Recommender Systems", "Time Series Analysis", "Anomaly Detection"],
+        "C++": ["Memory Management", "Pointers", "Object Oriented Programming", "Templates", "Standard Template Library (STL)", "Game Development", "Embedded Systems", "High-Performance Computing", "System Programming", "Compiler Design", "Operating System Development"],
+    },
+    "Art": {
+        "Painting": ["Oil painting techniques", "Watercolors", "Acrylics", "Famous painters", "Art History", "Abstract Art", "Portrait Painting", "Landscape Painting", "Still Life Painting", "Mural Painting", "Fresco Painting", "Miniature Painting", "Impressionism", "Expressionism"],
+        "Sculpture": ["Clay modeling", "Stone carving", "Metal sculpture", "Modern sculpture", "Sculpture Techniques", "Relief Sculpture", "Kinetic Sculpture", "Bronze Casting", "Wood Carving", "Assemblage", "Installation Art", "Performance Art", "Conceptual Art"],
+        "Drawing": ["Pencil drawing", "Charcoal drawing", "Ink drawing", "Figure drawing", "Perspective Drawing", "Cartooning", "Illustration", "Technical Drawing", "Life Drawing", "Sketching", "Digital Drawing", "Anatomical Drawing"],
+        "Photography": ["Camera settings", "Composition techniques", "Lighting", "Photo editing", "Digital Photography", "Portrait Photography", "Landscape Photography", "Documentary Photography", "Fashion Photography", "Street Photography", "Fine Art Photography", "Commercial Photography", "Photojournalism"],
+        "Digital Art": ["Photo manipulation", "Digital Painting", "VFX and 3D", "Animation", "Game Art", "Motion Graphics", "Web Design", "UI/UX Design", "Interactive Art", "Generative Art", "Virtual Reality Art", "Augmented Reality Art"],
+    },
+    "Music": {
+        "Theory": ["Scales", "Chords", "Harmony", "Counterpoint", "Music Notation", "Rhythm", "Form", "Analysis", "Orchestration", "Arranging", "Composition", "Improvisation"],
+        "Composition": ["Songwriting", "Arranging", "Orchestration", "Film scoring", "Musical Form", "Electronic Music Composition", "Classical Composition", "Jazz Composition", "Pop Composition", "World Music Composition", "Opera Composition", "Choral Composition", "Symphonic Composition"],
+        "Performance": ["Practice techniques", "Stage presence", "Microphone techniques", "Instrument maintenance", "Live Performance", "Audition Preparation", "Ensemble Playing", "Solo Performance", "Improvisation", "Conducting", "Vocal Technique", "Instrumental Technique"],
+        "Music History": ["Classical music", "Jazz", "Rock and roll", "World music", "Electronic Music", "Baroque Music", "Opera", "Renaissance Music", "20th Century Music", "Popular Music", "Medieval Music", "Romantic Music", "Contemporary Music"],
+    },
+     "Economics": {
+        "Microeconomics": ["Supply and Demand", "Market Structures", "Consumer Behavior", "Game Theory", "Elasticity", "Production Costs", "Welfare Economics", "Information Economics", "Behavioral Economics", "Industrial Organization"],
+        "Macroeconomics": ["GDP", "Inflation", "Unemployment", "Monetary Policy", "Fiscal Policy", "Economic Growth", "Business Cycles", "International Finance", "Economic Development", "Financial Crises", "Economic Indicators", "Open Economy Macroeconomics"],
+        "International Economics": ["Trade", "Exchange Rates", "Balance of Payments", "Globalization", "Trade Agreements", "Foreign Direct Investment", "International Monetary System", "Economic Integration", "Trade Policy", "Development Economics"],
+        "Econometrics": ["Regression Analysis", "Time Series Analysis", "Causal Inference", "Panel Data Analysis", "Hypothesis Testing", "Instrumental Variables", "Regression Discontinuity", "Difference-in-Differences", "Econometric Modeling", "Statistical Inference"],
+        "Development Economics": ["Poverty Reduction", "Economic Growth", "Sustainable Development", "Human Capital", "Infrastructure", "Institutions", "Foreign Aid", "Microfinance", "Globalization", "Inequality"],
+    },
+    "Psychology": {
+        "Cognitive Psychology": ["Memory", "Attention", "Perception", "Problem Solving", "Decision Making", "Language", "Intelligence", "Cognitive Development", "Cognitive Neuroscience", "Cognitive Biases", "Cognitive Therapies"],
+        "Developmental Psychology": ["Child Development", "Adolescent Development", "Adult Development", "Aging", "Cognitive Development", "Social Development", "Emotional Development", "Moral Development", "Attachment Theory", "Lifespan Development", "Personality Development"],
+        "Social Psychology": ["Attitudes", "Persuasion", "Group Dynamics", "Social Influence", "Prejudice", "Attraction", "Aggression", "Altruism", "Conformity", "Obedience", "Social Cognition", "Social Perception"],
+        "Clinical Psychology": ["Mental Disorders", "Therapy", "Assessment", "Diagnosis", "Treatment", "Psychopathology", "Anxiety Disorders", "Mood Disorders", "Personality Disorders", "Schizophrenia", "Addiction", "Eating Disorders", "Trauma", "Stress", "Psychopharmacology"],
+        "Biological Psychology": ["Neuroscience", "Genetics", "Hormones", "Brain Function", "Neurotransmitters", "Behavioral Genetics", "Evolutionary Psychology", "Psychopharmacology", "Neuroanatomy", "Neurophysiology", "Endocrinology", "Behavioral Neuroscience"],
+    },
+    "Sociology": {
+        "Social Theory": ["Marxism", "Functionalism", "Symbolic Interactionism", "Feminist Theory", "Postmodernism", "Critical Theory", "Rational Choice Theory", "Network Theory", "Conflict Theory", "Exchange Theory", "Social Constructionism"],
+        "Social Stratification": ["Class", "Race", "Gender", "Inequality", "Poverty", "Social Mobility", "Caste", "Ethnicity", "Age", "Intersectionality", "Wealth Inequality", "Income Inequality"],
+        "Social Institutions": ["Family", "Education", "Religion", "Politics", "Economy", "Media", "Law", "Healthcare", "Social Welfare", "Criminal Justice", "Military"],
+        "Social Change": ["Globalization", "Modernization", "Social Movements", "Technology", "Urbanization", "Demographic Change", "Political Revolutions", "Social Revolutions", "Cultural Change", "Environmental Change"],
+        "Research Methods": ["Surveys", "Experiments", "Interviews", "Ethnography", "Quantitative Methods", "Qualitative Methods", "Mixed Methods", "Data Analysis", "Statistical Analysis", "Sampling Techniques", "Research Design", "Ethical Considerations"],
+    },
+    "Philosophy": {
+        "Ethics": ["Moral Theories", "Applied Ethics", "Metaethics", "Normative Ethics", "Virtue Ethics", "Deontology", "Consequentialism", "Animal Ethics", "Environmental Ethics", "Bioethics", "Business Ethics", "Medical Ethics", "Political Ethics"],
+        "Metaphysics": ["Reality", "Existence", "Time", "Causation", "Free Will", "Identity", "Mind-Body Problem", "Space", "Substance", "Ontology", "Cosmology", "Philosophy of Mind"],
+        "Epistemology": ["Knowledge", "Justification", "Belief", "Rationalism", "Empiricism", "Skepticism", "Truth", "Certainty", "Perception", "Memory", "Reason", "Evidence"],
+        "Logic": ["Deductive Reasoning", "Inductive Reasoning", "Fallacies", "Symbolic Logic", "Propositional Logic", "Predicate Logic", "Modal Logic", "Informal Logic", "Critical Thinking", "Argumentation Theory"],
+        "Political Philosophy": ["Justice", "Rights", "Liberty", "Democracy", "Social Contract", "Power", "Authority", "Equality", "Feminism", "Anarchism", "Liberalism", "Conservatism", "Socialism", "Communism", "Fascism"],
+    },
+    "Political Science": {
+        "Political Theory": ["Liberalism", "Conservatism", "Socialism", "Democracy", "Communism", "Fascism", "Authoritarianism", "Libertarianism", "Populism", "Anarchism", "Feminism", "Environmentalism"],
+        "Comparative Politics": ["Political Systems", "Political Institutions", "Elections", "Political Parties", "Regimes", "Democratization", "Political Development", "State Building", "Civil Society", "Political Culture"],
+        "International Relations": ["Diplomacy", "War", "International Organizations", "Globalization", "Security", "International Law", "Foreign Policy", "International Political Economy", "Terrorism", "Human Rights", "Environmental Politics"],
+        "Public Policy": ["Policy Analysis", "Policy Making", "Implementation", "Evaluation", "Health Policy", "Environmental Policy", "Education Policy", "Social Welfare Policy", "Economic Policy", "Defense Policy", "Regulatory Policy", "Public Administration"],
+        "American Politics": ["Congress", "Presidency", "Supreme Court", "Interest Groups", "Public Opinion", "Elections", "Political Parties", "Federalism", "Constitutional Law", "State Government", "Local Government", "Campaign Finance"],
+    },
+    "Geography": {
+        "Physical Geography": ["Climate", "Landforms", "Biomes", "Hydrology", "Geology", "Natural Hazards", "Weathering", "Erosion", "Plate Tectonics", "Oceanography", "Climatology", "Geomorphology", "Biogeography", "Pedology"],
+        "Human Geography": ["Population", "Culture", "Urbanization", "Economic Development", "Migration", "Political Geography", "Social Geography", "Agricultural Geography", "Transportation Geography", "Historical Geography", "Cultural Geography", "Urban Planning", "Regional Geography"],
+        "Environmental Geography": ["Conservation", "Pollution", "Sustainability", "Climate Change", "Resource Management", "Environmental Degradation", "Environmental Justice", "Ecosystem Services", "Biodiversity", "Environmental Policy", "Ecological Economics", "Environmental Ethics"],
+        "GIS": ["Mapping", "Spatial Analysis", "Remote Sensing", "Cartography", "Geostatistics", "Spatial Modeling", "Geographic Databases", "Web Mapping", "Geographic Information Systems", "Spatial Statistics", "Geospatial Technologies"],
+        "Geopolitics": ["International Boundaries", "Resources", "Conflicts", "International Relations", "Geostrategic Regions", "Territorial Disputes", "Maritime Boundaries", "Power Dynamics", "Geopolitical Strategy", "Energy Security", "Border Security", "Resource Conflicts"],
+    },
+    "Biology": {
+        "Cell Biology": ["Cell Structure", "Cell Function", "Cellular Processes", "Cell Communication", "Cell Cycle", "Membrane Transport", "Organelles", "Cytoskeleton", "Cell Signaling", "Apoptosis", "Cell Differentiation"],
+        "Genetics": ["DNA", "RNA", "Gene Expression", "Inheritance", "Mutation", "Genetic Engineering", "Molecular Genetics", "Population Genetics", "Epigenetics", "Genomics", "Bioinformatics", "Genetic Disorders", "Gene Therapy", "Personalized Medicine"],
+        "Evolution": ["Natural Selection", "Adaptation", "Speciation", "Phylogeny", "Evolutionary History", "Microevolution", "Macroevolution", "Genetic Drift", "Gene Flow", "Evolutionary Biology", "Molecular Evolution", "Human Evolution", "Phylogenetic Trees", "Evolutionary Mechanisms"],
+        "Ecology": ["Ecosystems", "Populations", "Communities", "Biodiversity", "Conservation", "Ecological Interactions", "Biogeography", "Ecological Succession", "Climate Change Impacts", "Restoration Ecology", "Conservation Biology", "Population Ecology", "Community Ecology", "Ecosystem Ecology"],
+        "Anatomy": ["Skeletal System", "Muscular System", "Nervous System", "Circulatory System", "Respiratory System", "Digestive System", "Excretory System", "Endocrine System", "Reproductive System", "Integumentary System", "Cardiovascular System", "Lymphatic System", "Urinary System"],
+        "Physiology": ["Homeostasis", "Organ Systems", "Sensory Systems", "Endocrine System", "Immune System", "Cellular Respiration", "Photosynthesis", "Digestion", "Excretion", "Nutrient Transport", "Gas Exchange", "Nerve Impulses", "Muscle Contraction", "Temperature Regulation"],
+    }
+
+}
+
+# Motivation quotes
+MOTIVATION_QUOTES = [
+    "The only way to do great work is to love what you do. - Steve Jobs",
+    "Believe you can and you're halfway there. - Theodore Roosevelt",
+    "The future belongs to those who believe in the beauty of their dreams. - Eleanor Roosevelt",
+    "Success is not final, failure is not fatal: It is the courage to continue that counts. - Winston Churchill",
+    "Don't watch the clock; do what it does. Keep going. - Sam Levenson",
+    "The expert in anything was once a beginner.",
+    "Every accomplishment starts with the decision to try.",
+    "Small steps are still steps. Keep moving forward.",
+    "Challenges are what make life interesting and overcoming them is what makes life meaningful. - Joshua Marine"
+]
+
+st.title("Study Planner")
+
+# Ensure all subjects are available in the selectbox by initializing it correctly.
+subjects = list(SUBJECT_TOPICS.keys())
+subject = st.selectbox("Select Subject", subjects)
+
+# Show topics for the selected subject
+topics = list(SUBJECT_TOPICS[subject].keys())
+topic = st.selectbox("Select Topic", topics)
+
+# Show concepts for the selected topic
+concepts = SUBJECT_TOPICS[subject][topic]
+st.write("Important Concepts:", concepts)
+
+# Flashcard Generation
+st.header("Flashcards")
+if concepts:
+    num_flashcards = st.slider("Number of Flashcards to Generate", 1, len(concepts), min(5, len(concepts)))
+    selected_concepts = random.sample(concepts, num_flashcards)  # Randomly select concepts
+
+    for i, concept in enumerate(selected_concepts):
+        st.subheader(f"Flashcard #{i + 1}")
+        with st.expander(f"{concept} - Click to Reveal Answer"):  # Use expander for a cleaner UI
+
+            # Placeholder Answer (customize based on concept if needed)
+            st.write(f"Research and Define: {concept}")
+            st.write("Look up detailed explanations and examples. Test yourself: Can you explain it in your own words?") #Suggest ways for students.
+else:
+    st.write("No concepts available for this topic to create flashcards.")
+
+# Motivation
+st.sidebar.header("Motivation")
+st.sidebar.info(random.choice(MOTIVATION_QUOTES))
+
+# Study Planner Core
+st.header("Study Planner")
+
+# Input
+study_hours = st.number_input("Number of study hours", min_value=1, max_value=10, value=3)
+start_date = st.date_input("Start date", datetime.date.today())
+end_date = st.date_input("End date", datetime.date.today() + datetime.timedelta(days=7))
+
+# Error Handling
+if start_date >= end_date:
+    st.error("End date should be later than the start date.")
+else:
+
+    # Calculating number of days for study
+    number_of_days = (end_date - start_date).days + 1
+    daily_study_hours = study_hours / number_of_days
+    st.write("Study hours per day: ", daily_study_hours)
+
+    # Output of Scheduled topics (Example: Distributing concepts)
+    num_concepts = len(concepts)
+    concepts_per_day = num_concepts / number_of_days
+
+    st.subheader("Suggested Study Schedule:")
+    current_date = start_date
+    concept_index = 0
+
+    for day in range(number_of_days):
+        st.write(f"**{current_date.strftime('%Y-%m-%d')}**")
+        num_concepts_this_day = int(concepts_per_day)  # Integer number of concepts per day
+        # Make sure to include all concepts if division creates a remainder.
+        if (concept_index + num_concepts_this_day) > num_concepts:
+            num_concepts_this_day = num_concepts - concept_index
+
+        concepts_to_study = concepts[concept_index: concept_index + num_concepts_this_day]
+
+        if concepts_to_study:  # Prevent displaying empty entries
+            st.write("- Concepts to study:", concepts_to_study)
+
+            concept_index += num_concepts_this_day  # Update Index.
+
+        current_date += datetime.timedelta(days=1)  # Incrementing current date
+
+    if concept_index < num_concepts:  # If some concepts remain because of rounding.
+        st.write("Remaining concepts", concepts[concept_index:])
